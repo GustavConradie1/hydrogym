@@ -81,6 +81,7 @@ class FlowConfig(PDEBase):
         self.obs_fun = self.configure_observations(
             obs_type=config.pop("observation_type", None),
             probe_obs_types=probe_obs_types,
+            probes=probes,
         )
 
         # Process restart parameter - resolve environment names to checkpoint paths
@@ -293,7 +294,7 @@ class FlowConfig(PDEBase):
 
         self.split_solution()  # Reset functions so self.u, self.p point to the new solution
 
-    def configure_observations(self, obs_type=None, probe_obs_types={}) -> ObservationFunction:
+    def configure_observations(self, obs_type=None, probe_obs_types={}, probes=None) -> ObservationFunction:
         raise NotImplementedError
 
     def get_observations(self) -> np.ndarray:
