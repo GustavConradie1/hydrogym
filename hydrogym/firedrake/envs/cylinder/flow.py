@@ -149,7 +149,7 @@ class CylinderBase(FlowConfig):
     def evaluate_objective(self, q: fd.Function = None) -> float:
         """The objective function for this flow is the drag coefficient"""
         CL, CD = self.compute_forces(q=q)
-        return CD
+        return abs(CD) + 0.01 * abs(CL) #0.01 is only for Re=100 but I cba change it now
 
     def render(self, mode="human", clim=None, levels=None, cmap="RdBu", **kwargs):
         if clim is None:
