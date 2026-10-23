@@ -44,6 +44,9 @@ class CylinderBase(FlowConfig):
     def num_inputs(self) -> int:
         return 1  # Rotary control
 
+    def velocity_forces(self, probes, q: fd.Function = None) -> np.ndarray:
+        return np.append(partial(self.velocity_probe, probes), self.compute_forces(q=q))
+
     def configure_observations(self, obs_type=None, probe_obs_types={}) -> ObservationFunction:
         if obs_type is None:
             obs_type = "lift_drag"
@@ -51,6 +54,7 @@ class CylinderBase(FlowConfig):
         supported_obs_types = {
             **probe_obs_types,
             "lift_drag": ObservationFunction(self.compute_forces, num_outputs=2),
+            "velocity_probes_lift_drag": ObservationFunction(partial(self.velocity_forces,probes), num_outputs=2+2*len(probes)),
         }
 
         if obs_type not in supported_obs_types:
