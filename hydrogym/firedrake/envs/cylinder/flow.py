@@ -1,4 +1,5 @@
 import os
+from functools import partial
 
 import firedrake as fd
 import matplotlib.pyplot as plt
@@ -44,8 +45,27 @@ class CylinderBase(FlowConfig):
     def num_inputs(self) -> int:
         return 1  # Rotary control
 
-    def velocity_forces(self, probes, q: fd.Function = None) -> np.ndarray:
-        return np.append(partial(self.velocity_probe, probes), self.compute_forces(q=q))
+        def velocity_probe_lift_drag(self, probes, q: fd.Function = None) -> list[float]:
+        """Probe velocity in the wake, as well as lift, drag for observations.
+
+        Returns a list of velocities at the probe locations, ordered as
+        (u1, u2, ..., uN, v1, v2, ..., vN) where N is the number of probes.
+        """
+        if q is None:
+            q = self.q
+        u = q.subfunctions[0]
+        probes_array = np.asarray(probes)
+        # Get mesh from the main mixed space (self.q has mesh info)
+        mesh = self.mesh
+        # Create VertexOnlyMesh at probe locations and interpolate
+        vom = fd.VertexOnlyMesh(mesh, probes_array)
+        V_vom = fd.VectorFunctionSpace(vom, "DG", 0)
+        u_vom = fd.Function(V_vom)
+        u_vom.interpolate(u)
+        # Extract values and return in expected format
+        lift_drag = self.compute_forces(q=q)
+        vel = u_vom.dat.data_ro.flatten("F")
+        return np.append(vel,lift_drag)
 
     def configure_observations(self, obs_type=None, probe_obs_types={}) -> ObservationFunction:
         if obs_type is None:
@@ -54,7 +74,7 @@ class CylinderBase(FlowConfig):
         supported_obs_types = {
             **probe_obs_types,
             "lift_drag": ObservationFunction(self.compute_forces, num_outputs=2),
-            "velocity_probes_lift_drag": ObservationFunction(partial(self.velocity_forces,probes), num_outputs=2+2*len(probes)),
+            "velocity_probes_lift_drag": ObservationFunction(partial(self.velocity_probe_lift_drag,probes), num_outputs=2+2*len(probes)),
         }
 
         if obs_type not in supported_obs_types:
