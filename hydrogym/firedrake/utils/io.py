@@ -54,6 +54,25 @@ class CheckpointCallback(CallbackBase):
             flow.save_checkpoint(self.filename, write_mesh=self.write_mesh, idx=idx)
 
 
+class MultipleCheckpointCallback(CallbackBase):
+    def __init__(
+        self,
+        interval: Optional[int] = 1,
+        filename: Optional[str] = "output/checkpoint.h5",
+        write_mesh=True,
+        write_timeseries=False,
+    ):
+        super().__init__(interval=interval)
+        self.filename = filename
+        self.write_mesh = write_mesh
+        self.write_timeseries = write_timeseries
+
+    def __call__(self, iter: int, t: float, flow: Tuple[fd.Function]):
+        if super().__call__(iter, t, flow):
+            idx = iter if self.write_timeseries else None
+            flow.save_checkpoint(f"{self.filename}{iter}.h5", write_mesh=self.write_mesh, idx=idx)
+
+
 class LogCallback(CallbackBase):
     def __init__(
         self,
